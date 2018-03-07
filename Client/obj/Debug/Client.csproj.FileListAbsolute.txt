@@ -1,0 +1,9 @@
+C:\Users\creddick\source\repos\ClientServerApp\Client\bin\Debug\Client.exe.config
+C:\Users\creddick\source\repos\ClientServerApp\Client\bin\Debug\Client.exe
+C:\Users\creddick\source\repos\ClientServerApp\Client\bin\Debug\Client.pdb
+C:\Users\creddick\source\repos\ClientServerApp\Client\bin\Debug\libClient.dll
+C:\Users\creddick\source\repos\ClientServerApp\Client\bin\Debug\libClient.pdb
+C:\Users\creddick\source\repos\ClientServerApp\Client\obj\Debug\Client.csprojResolveAssemblyReference.cache
+C:\Users\creddick\source\repos\ClientServerApp\Client\obj\Debug\Client.csproj.CoreCompileInputs.cache
+C:\Users\creddick\source\repos\ClientServerApp\Client\obj\Debug\Client.exe
+C:\Users\creddick\source\repos\ClientServerApp\Client\obj\Debug\Client.pdb
