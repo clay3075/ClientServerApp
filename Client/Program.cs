@@ -25,22 +25,44 @@ namespace Client
                 response = client.ReadResponse();
                 try
                 {
-                    switch (input)
+                    switch (input?.Split(' ')[0])
                     {
-                        case "ls":
-                            if (response == null) goto default;
-                            foreach (var path in (string[])response)
-                                Console.WriteLine(path);
+                        case "getfile":
+                            var temp = (object[])response;
+                            if (temp[0] is int fileLength && temp[1] is byte[] fileContents)
+                            {
+                                using (var file = File.Create(input.Split(' ')[2]))
+                                {
+                                    file.Write(fileContents, 0, fileLength);
+                                }
+                                Console.WriteLine("File retrieved.");
+                            }
+                            else
+                            {
+                                response = temp[0];
+                                goto default;
+                            }
                             break;
-                        case "cd":
-                            if (response == null) goto default;
-                            break;
-                        case "Success":
-                            Console.WriteLine("Success");
-                            break;
+                        case "sendfile":
+                            if ((string)response == "Ready")
+                            {
+                                var fileRes = new object[3];
+                                using (var file = File.OpenRead(input.Split(' ')[1]))
+                                {
+                                    fileRes[1] = new byte[file.Length];
+                                    fileRes[0] = file.Read((byte[]) fileRes[1], 0, (int)file.Length);
+                                }
+                                fileRes[2] = input.Split(' ')[2];
+                                client.SendCommand(fileRes);
+                                response = "Success";
+                                goto default;
+                            }
+                            else
+                            {
+                                goto default;
+                            }
                         default:
-                            if ((string)response == "Success") goto case "Success";
-                            Console.WriteLine("Failed");
+                            Console.WriteLine(response);
                             break;
                     }
                 }

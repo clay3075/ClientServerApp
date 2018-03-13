@@ -14,7 +14,8 @@ namespace libServer
     public class Server
     {
         private readonly TcpListener _connection;
-        private readonly Dictionary<string, Func<object, object>> _commands = new Dictionary<string, Func<object, object>>();
+        private readonly Dictionary<string, Func<object[], object>> _commands = new Dictionary<string, Func<object[], object>>();
+        private Dictionary<string, string> _documentation = new Dictionary<string, string>();
         private Socket _client;
 
         public Server()
@@ -28,14 +29,20 @@ namespace libServer
             _client = _connection.AcceptSocket();
         }
 
-        public object HandleIncomingCommands(string currCommand, object param=null)
+        public object HandleIncomingCommands(string currCommand, object[] param=null)
         {
             return (from command in _commands.Keys where command == currCommand select _commands[command](param)).FirstOrDefault();
         }
 
-        public void AddCommand(string command, Func<object, object> action)
+        public void AddCommand(string command, Func<object[], object> action, string description = "No description.")
         {
             _commands.Add(command, action);
+            _documentation.Add(command, description);
+        }
+
+        public string GetDocumentation()
+        {
+            return string.Join("\n", from document in _documentation select document.Key + ": " + document.Value);
         }
 
         private NetworkStream GetClientStream()
