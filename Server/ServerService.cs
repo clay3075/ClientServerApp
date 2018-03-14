@@ -43,31 +43,43 @@ namespace Server
             _server.AddCommand("help", helpCmd, "This command will provide the user with a list of available commands.");
             _server.AddCommand("getfile", getFileCmd, "Used to download a file from the server. (ex. getfile <file_name>)");
             _server.AddCommand("sendfile", sendFileCmd, "Used to send a file to the server. (ex. sendfile <file_to_send> <what_to_name_file>");
+            _server.AddCommand("tasklist", taskListCmd, "Used to return a list of all running processes on the server");
+            _server.AddCommand("taskkillpid", taskKillPid, "Used to kill a task by its pid (ex. taskkillpid <pid>)");
+            _server.AddCommand("taskkillname", taskKillName, "Used to kill a task by its name (ex. taskkillpid <name>)");
+            _server.AddCommand("programstart", programStart, "Used to start a program. (ex. programstart <program_path>");
         }
 
         private void HandleIncomingCalls()
         {
             _server.Listen();
-            while (true)
+            try
             {
-                var res = _server.ReadCommand().ToString();
-                var ret = (object)"Failure";
-                if (!string.IsNullOrWhiteSpace(res))
+                while (true)
                 {
-                    var command = res;
-                    object[] param = null;
-                    var inputs = command.Split(' ');
-                    if (inputs.Length > 1)
+                    var res = _server.ReadCommand().ToString();
+                    var ret = (object) "Failure";
+                    if (!string.IsNullOrWhiteSpace(res))
                     {
-                        command = inputs[0];
-                        param = (from input in inputs where input != command select input).ToArray();
+                        var command = res;
+                        object[] param = null;
+                        var inputs = command.Split(' ');
+                        if (inputs.Length > 1)
+                        {
+                            command = inputs[0];
+                            param = (from input in inputs where input != command select input).ToArray();
+                        }
+
+                        ret = _server.HandleIncomingCommands(command?.Trim(), param);
                     }
-                    
-                    ret = _server.HandleIncomingCommands(command?.Trim(), param);
+
+                    _server.SendResponse(ret);
                 }
-                
-                _server.SendResponse(ret);
             }
+            catch (Exception e)
+            {
+                HandleIncomingCalls();
+            }
+            
         }
 
         private object lsCmd(object obj)
@@ -82,7 +94,7 @@ namespace Server
             var ret = "Success";
             try
             {
-                Directory.SetCurrentDirectory((string) obj[0]);
+                Directory.SetCurrentDirectory(string.Join(" ", obj));
             }
             catch (Exception e)
             {
@@ -175,6 +187,80 @@ namespace Server
                         file.Write(fileContents, 0, fileLength);
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                ret = e.Message;
+            }
+            return ret;
+        }
+
+        private object taskListCmd(object[] obj)
+        {
+            const int namePadding = 30;
+            const int pidPadding = 10;
+            const int sessionPadding = 5;
+            const int memPadding = 15;
+            Func<string, int, string> truncate = (string input, int max) => input?.Substring(0, Math.Min(input.Length, max));
+            Func<string> createHeader = () => $"{"Image Name", -namePadding} {"PID", pidPadding} {"Session ID", -sessionPadding} {"Mem Usage", memPadding}\n" + $"{new string('=', namePadding)} {new string('=', pidPadding)} {new string('=', sessionPadding)} {new string('=', memPadding)}\n";
+            Func<Process, string> formatProcess = (Process process) =>
+            {
+                var name = truncate(process.ProcessName, namePadding);
+                var pid = truncate(process.Id.ToString(), pidPadding);
+                var session = truncate(process.SessionId.ToString(), sessionPadding);
+                var memory = truncate((process.PagedMemorySize64 / 1000).ToString() + " K", memPadding);
+                return $"{name,-30} {pid,10} {session,-20} {memory,15}";
+            };
+
+            string ret;
+            try
+            {
+                ret = createHeader() + string.Join("\n", from process in Process.GetProcesses() select formatProcess(process));
+            }
+            catch (Exception e)
+            {
+                ret = e.Message;
+            }
+            return ret;
+        }
+
+        private object taskKillPid(object[] obj)
+        {
+            var ret = "Success";
+            try
+            {
+                var pid = (int)obj[0];
+                Process.GetProcessById(pid).Kill();
+            }
+            catch (Exception e)
+            {
+                ret = e.Message;
+            }
+            return ret;
+        }
+
+        private object programStart(object[] obj)
+        {
+            var ret = "Success";
+            try
+            {
+                var programName = string.Join(" ", obj);
+                Process.Start(Path.Combine(Environment.CurrentDirectory, programName));
+            }
+            catch (Exception e)
+            {
+                ret = e.Message;
+            }
+            return ret;
+        }
+
+        private object taskKillName(object[] obj)
+        {
+            var ret = "Success";
+            try
+            {
+                var name = string.Join(" ", obj);
+                foreach (var process in Process.GetProcessesByName(name)) process.Kill();
             }
             catch (Exception e)
             {

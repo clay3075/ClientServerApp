@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,7 +43,12 @@ namespace libServer
 
         public string GetDocumentation()
         {
-            return string.Join("\n", from document in _documentation select document.Key + ": " + document.Value);
+            return $"{"Command", 20}   {"Description", -60}\n" + string.Join("\n", from document in _documentation select formatDocumentation(document.Key, document.Value));
+        }
+
+        private string formatDocumentation(string command, string description)
+        {
+            return $"{command,20} | {description, -60}";
         }
 
         private NetworkStream GetClientStream()
